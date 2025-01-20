@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Türkiye Geçmiş Sel Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        .nav-button {
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .nav-button:hover {
+            background-color: #1d4ed8;
+        }
+        
+        .navbar {
+            background-color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+
+        #map {
+            height: 80vh;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .custom-popup {
+            text-align: center;
+            max-width: 250px;
+        }
+
+        .dashboard-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <h1 class="text-3xl font-bold text-gray-800">Türkiye Geçmiş Sel Dashboard</h1>
+            <div class="flex gap-4">
+                <button onclick="showManualTest()" class="nav-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    Manuel Test
+                </button>
+                <button onclick="window.location.href='/'" class="nav-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                    Ana Sayfa
+                </button>
+            </div>
+        </div>
+    </nav>
+        
+    <div id="map"></div>
+    <div id="dashboard-root"></div>
+    <div id="manual-test-root"></div>
+
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"></script>
+    
+    <script>
+        // Geçmiş sel verileri
+        const floodHistory = [
+                {
+                location: [39.4699, -0.3763],
+                city: "Valencia, İspanya",
+                date: "29 Ekim 2024",
+                title: "İspanya Sel Felaketi",
+                details: {
+                    deaths: 231,
+                    affected_districts: ["Valencia", "Castilla–La Mancha", "Andalusia"],
+                    rainfall: "300mm+",
+                    damage: "Yaklaşık 3.5 milyar Euro",
+                    duration: "19 gün",
+                }
+            },
+            {
+                location: [41.0082, 28.9784],
+                city: "İstanbul",
+                date: "15 Ağustos 2023",
+                title: "İstanbul Sel Felaketi",
+                details: {
+                    deaths: 2,
+                    affected_districts: ["Başakşehir", "Küçükçekmece", "Esenyurt"],
+                    rainfall: "128mm",
+                    damage: "Yaklaşık 50 milyon TL",
+                    duration: "6 saat"
+                }
+            },
+            {
+                location: [36.8969, 30.7133],
+                city: "Antalya",
+                date: "3 Şubat 2023",
+                title: "Antalya Sel Felaketi",
+                details: {
+                    deaths: 0,
+                    affected_districts: ["Manavgat", "Serik"],
+                    rainfall: "165mm",
+                    damage: "Yaklaşık 30 milyon TL",
+                    duration: "12 saat"
+                }
+            },
+            {
+                location: [37.0662, 37.3833],
+                city: "Gaziantep",
+                date: "27 Mart 2023",
+                title: "Gaziantep Sel Felaketi",
+                details: {
+                    deaths: 1,
+                    affected_districts: ["Şahinbey", "Şehitkamil"],
+                    rainfall: "142mm",
+                    damage: "Yaklaşık 25 milyon TL",
+                    duration: "8 saat"
+                }
+            },
+            {
+                location: [37.0343, 27.4305],
+                city: "Bodrum",
+                date: "22 Eylül 2015",
+                title: "Bodrum Sel Felaketi",
+                details: {
+                    deaths: 0,
+                    affected_districts: ["Bodrum Merkez", "Turgutreis"],
+                    rainfall: "88mm",
+                    damage: "Yaklaşık 15 milyon TL",
+                    duration: "4 saat"
+                }
+            },
+            {
+                location: [41.2867, 36.3300],
+                city: "Samsun",
+                date: "4 Temmuz 2012",
+                title: "Samsun Sel Felaketi",
+                details: {
+                    deaths: 0,
+                    affected_districts: ["İlkadım", "Atakum"],
+                    rainfall: "20mm",
+                    damage: "Yaklaşık 10 milyon TL",
+                    duration: "5 saat"
+                }
+            },
+            {
+                location: [39.9334, 32.8597],
+                city: "Ankara",
+                date: "7 Haziran 2022",
+                title: "Ankara Sel Felaketi",
+                details: {
+                    deaths: 0,
+                    affected_districts: ["Mamak", "Keçiören"],
+                    rainfall: "47mm",
+                    damage: "Yaklaşık 20 milyon TL",
+                    duration: "5 saat"
+                }
+            },
+            {
+                location: [37.7636, 38.2773],
+                city: "Adıyaman",
+                date: "15 Mart 2023",
+                title: "Adıyaman Sel Felaketi",
+                details: {
+                    deaths: 3,
+                    affected_districts: ["Merkez", "Kahta"],
+                    rainfall: "35mm",
+                    damage: "Yaklaşık 40 milyon TL",
+                    duration: "8 saat"
+                }
+            },
+            {
+                location: [38.4189, 27.1287],
+                city: "İzmir",
+                date: "2 Şubat 2021",
+                title: "İzmir Sel Felaketi",
+                details: {
+                    deaths: 0,
+                    affected_districts: ["Karşıyaka", "Bornova"],
+                    rainfall: "39mm",
+                    damage: "Yaklaşık 30 milyon TL",
+                    duration: "7 saat"
+                }
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var map = L.map('map', {
+                center: [39.0, 35.0],
+                zoom: 6
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Özel marker stili
+            const floodIcon = L.divIcon({
+                className: 'custom-flood-marker',
+                html: `<div style="
+                    width: 20px;
+                    height: 20px;
+                    background: rgba(220, 38, 38, 0.8);
+                    border: 2px solid white;
+                    border-radius: 50%;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+                "></div>`,
+                iconSize: [20, 20]
+            });
+
+            // Sel verilerini haritaya ekle
+            floodHistory.forEach(flood => {
+                const marker = L.marker(flood.location, {
+                    icon: floodIcon,
+                    title: flood.title
+                }).addTo(map);
+
+                // Popup içeriği
+                const popupContent = `
+                    <div class="custom-popup p-4">
+                        <h3 class="text-lg font-bold mb-2">${flood.title}</h3>
+                        <p class="text-sm mb-1"><strong>Şehir:</strong> ${flood.city}</p>
+                        <p class="text-sm mb-1"><strong>Tarih:</strong> ${flood.date}</p>
+                        <p class="text-sm mb-1"><strong>Etkilenen Bölgeler:</strong> ${flood.details.affected_districts.join(", ")}</p>
+                        <p class="text-sm mb-1"><strong>Yağış Miktarı:</strong> ${flood.details.rainfall}</p>
+                        <p class="text-sm mb-1"><strong>Tahmini Hasar:</strong> ${flood.details.damage}</p>
+                        <p class="text-sm mb-1"><strong>Süre:</strong> ${flood.details.duration}</p>
+                        ${flood.details.deaths > 0 ? 
+                            `<p class="text-sm text-red-600 font-semibold mt-2">Can Kaybı: ${flood.details.deaths}</p>` : 
+                            '<p class="text-sm text-green-600 font-semibold mt-2">Can Kaybı Yok</p>'}
+                    </div>
+                `;
+
+                marker.bindPopup(popupContent);
+            });
+        });
+    </script>
+
+    <script type="text/babel" src="{{ url_for('static', filename='FloodHistoryDashboard.js') }}"></script>
+
+    <script type="text/babel" src="{{ url_for('static', filename='ManualTestRoot.js') }}"></script>
+    
+    <script type="text/babel">
+        let manualTestVisible = false;
+        
+        function showManualTest() {
+            manualTestVisible = true;
+            ReactDOM.render(
+                <ManualTestForm />,
+                document.getElementById('manual-test-root')
+            );
+        }
+        
+        // Mevcut dashboard render
+        ReactDOM.render(
+            <FloodHistoryDashboard />,
+            document.getElementById('dashboard-root')
+        );
+    </script>
+
+</body>
+</html>

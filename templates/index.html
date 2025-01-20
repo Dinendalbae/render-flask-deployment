@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Türkiye Sel Risk Monitörü</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+        integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+        crossorigin="" />
+    <!-- RainViewer CSS -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='leaflet.rainviewer.css') }}">
+
+    <!-- React ve ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+        
+    <!-- Babel için (JSX dönüşümü) -->
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* Navigation Bar Stilleri */
+        .nav-button {
+            background-color: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .nav-button:hover {
+            background-color: #1d4ed8;
+        }
+        
+        .navbar {
+            background-color: white;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1000;
+        }
+        
+        .navbar-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dropdown {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 300px;
+            display: none;
+        }
+        
+        .dropdown.show {
+            display: block;
+        }
+
+        /* Marker stilleri */
+        .custom-marker {
+            background: transparent;
+            border: none;
+        }
+        .marker-inner {
+            width: 10px;
+            height: 10px;
+            background: rgba(0, 0, 255, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+        .marker-inner:hover {
+            background: rgba(0, 21, 255, 0.8);
+            border-color: rgba(255, 255, 255, 1);
+            transform: scale(1.2);
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+
+        #map {
+            height: 80vh;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .custom-popup {
+            text-align: center;
+            max-width: 250px;
+        }
+        .custom-popup h3 {
+            margin: 5px 0;
+            color: #333;
+        }
+        .probability-high {
+            color: #dc2626;
+            font-weight: bold;
+        }
+        .probability-medium {
+            color: #d97706;
+            font-weight: bold;
+        }
+        .probability-low {
+            color: #059669;
+            font-weight: bold;
+        }
+
+        /* Dashboard stilleri */
+        .dashboard-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .city-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 15px;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+
+        .city-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <h1 class="text-3xl font-bold text-gray-800">Türkiye Sel Risk Monitörü</h1>
+            <div class="flex gap-4">
+                <button onclick="window.location.href='/past-floods'" class="nav-button">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Geçmiş Sel Dashboard
+                </button>
+                <div style="position: relative;">
+                    <button onclick="toggleDropdown()" class="nav-button">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a9 9 0 0 1 9 9 9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9z"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                        AI Dashboard
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 9l6 6 6-6"/>
+                        </svg>
+                    </button>
+                    <div id="dropdown" class="dropdown">
+                        <h3 class="font-semibold text-gray-800 mb-2">Yapay Zeka Modeli</h3>
+                        <p class="text-gray-600 text-sm mb-3">RandomForest sınıflandırıcı kullanılarak sel risk tahmini</p>
+                        <div class="space-y-2">
+                            <div class="flex text-sm">
+                                <span class="w-24 text-gray-500">Doğruluk:</span>
+                                <span class="text-gray-800">90.23%</span>
+                            </div>
+                            <div class="flex text-sm">
+                                <span class="w-24 text-gray-500">Veri Seti:</span>
+                                <span class="text-gray-800">Hindistan Sel Verileri</span>
+                            </div>
+                        </div>
+                        <button onclick="window.location.href='/ai-dashboard'" class="w-full mt-3 bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 rounded text-sm">
+                            Detaylı Bilgi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+     </nav>
+        
+    <!-- Harita -->
+    <div id="map"></div>
+
+    <!-- React için dashboard container -->
+    <div id="dashboard-root"></div>
+
+    <!-- Model Info Container -->
+    <div id="model-info-root"></div>
+        
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='leaflet.rainviewer.js') }}"></script>
+    
+    <script>
+        // Türkiye şehirleri verisi
+        const turkiyeSehirleri = {
+            "Adana": [37.0000, 35.3213],
+            "Adıyaman": [37.7644, 38.2777],
+            "Afyonkarahisar": [38.7507, 30.5567],
+            "Ağrı": [39.7191, 43.0503],
+            "Amasya": [40.6499, 35.8353],
+            "Ankara": [39.9334, 32.8597],
+            "Antalya": [36.8969, 30.7133],
+            "Artvin": [41.1828, 41.8183],
+            "Aydın": [37.8560, 27.8416],
+            "Balıkesir": [39.6484, 27.8826],
+            "Bilecik": [40.1506, 29.9792],
+            "Bingöl": [39.0626, 40.7696],
+            "Bitlis": [38.4006, 42.1095],
+            "Bolu": [40.7392, 31.6089],
+            "Burdur": [37.7210, 30.2797],
+            "Bursa": [40.1885, 29.0610],
+            "Çanakkale": [40.1553, 26.4142],
+            "Çankırı": [40.6013, 33.6134],
+            "Çorum": [40.5506, 34.9556],
+            "Denizli": [37.7765, 29.0864],
+            "Diyarbakır": [37.9144, 40.2306],
+            "Edirne": [41.6818, 26.5623],
+            "Elazığ": [38.6810, 39.2264],
+            "Erzincan": [39.7500, 39.5000],
+            "Erzurum": [39.9000, 41.2700],
+            "Eskişehir": [39.7767, 30.5206],
+            "Gaziantep": [37.0662, 37.3833],
+            "Giresun": [40.9128, 38.3895],
+            "Gümüşhane": [40.4386, 39.5086],
+            "Hakkari": [37.5833, 43.7333],
+            "Hatay": [36.2023, 36.1613],
+            "Isparta": [37.7648, 30.5566],
+            "Mersin": [36.8000, 34.6333],
+            "İstanbul": [41.0082, 28.9784],
+            "İzmir": [38.4192, 27.1287],
+            "Kars": [40.6167, 43.1000],
+            "Kastamonu": [41.3887, 33.7827],
+            "Kayseri": [38.7312, 35.4787],
+            "Kırklareli": [41.7333, 27.2167],
+            "Kırşehir": [39.1425, 34.1709],
+            "Kocaeli": [40.8533, 29.8815],
+            "Konya": [37.8667, 32.4833],
+            "Kütahya": [39.4167, 29.9833],
+            "Malatya": [38.3552, 38.3095],
+            "Manisa": [38.6191, 27.4289],
+            "Kahramanmaraş": [37.5858, 36.9371],
+            "Mardin": [37.3212, 40.7245],
+            "Muğla": [37.2153, 28.3636],
+            "Muş": [38.7432, 41.5064],
+            "Nevşehir": [38.6244, 34.7144],
+            "Niğde": [37.9667, 34.6833],
+            "Ordu": [40.9839, 37.8764],
+            "Rize": [41.0201, 40.5234],
+            "Sakarya": [40.7569, 30.3783],
+            "Samsun": [41.2928, 36.3313],
+            "Siirt": [37.9333, 41.9500],
+            "Sinop": [42.0231, 35.1531],
+            "Sivas": [39.7477, 37.0179],
+            "Tekirdağ": [40.9833, 27.5167],
+            "Tokat": [40.3167, 36.5500],
+            "Trabzon": [41.0015, 39.7178],
+            "Tunceli": [39.1079, 39.5401],
+            "Şanlıurfa": [37.1591, 38.7969],
+            "Uşak": [38.6823, 29.4082],
+            "Van": [38.4891, 43.4089],
+            "Yozgat": [39.8181, 34.8147],
+            "Zonguldak": [41.4564, 31.7987]
+        };
+
+        // Risk seviyesi belirleme fonksiyonu
+        function getRiskLevel(probability) {
+            if (probability >= 80) return { level: 'Çok Yüksek', color: 'text-red-800', bgColor: 'bg-red-200' };
+            if (probability >= 65) return { level: 'Yüksek', color: 'text-red-600', bgColor: 'bg-red-100' };
+            if (probability >= 50) return { level: 'Orta', color: 'text-yellow-600', bgColor: 'bg-yellow-100' };
+            if (probability >= 40) return { level: 'Düşük', color: 'text-green-600', bgColor: 'bg-green-100' };
+            return { level: 'Çok Düşük', color: 'text-green-800', bgColor: 'bg-green-200' 
+            };
+        }
+
+        // Şehir kartı oluşturma fonksiyonu
+        function createCityCard(cityData) {
+            const risk = getRiskLevel(cityData.probability);
+            return `
+                <div class="city-card ${risk.bgColor} border border-gray-200">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-lg font-semibold">${cityData.city}</h3>
+                        <span class="font-bold ${risk.color}">${cityData.probability}%</span>
+                    </div>
+                    <div class="mt-2 text-sm">
+                        <p>Risk Seviyesi: <span class="${risk.color} font-semibold">${risk.level}</span></p>
+                        <p>Sıcaklık: ${cityData.data['Temperature (°C)']}°C</p>
+                        <p>Nem: ${cityData.data['Humidity (%)']}%</p>
+                        <p>Yağış: ${cityData.data['Rainfall (mm)']} mm</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Tüm şehirlerin verilerini çekme ve işleme
+        async function fetchAllCityData() {
+            const loading = document.getElementById('loading');
+            const citiesGrid = document.getElementById('cities-grid');
+            
+            loading.classList.remove('hidden');
+            citiesGrid.innerHTML = '';
+
+            try {
+                const cities = Object.keys(turkiyeSehirleri);
+                const promises = cities.map(async (city) => {
+                    const formData = new FormData();
+                    formData.append('city', city);
+
+                    const response = await fetch('/predict', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) throw new Error(`Error fetching data for ${city}`);
+                    
+                    const data = await response.json();
+                    return { city, ...data };
+                });
+
+                const results = await Promise.all(promises);
+                const validResults = results
+                    .filter(result => result.success)
+                    .sort((a, b) => b.probability - a.probability);
+
+                citiesGrid.innerHTML = validResults
+                    .map(cityData => createCityCard(cityData))
+                    .join('');
+
+            } catch (error) {
+                console.error('Error fetching city data:', error);
+                citiesGrid.innerHTML = `
+                    <div class="text-red-600 text-center py-4">
+                        Veri yüklenirken bir hata oluştu: ${error.message}
+                    </div>
+                `;
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Harita başlatma
+            var map = L.map('map', {
+                center: [39.0, 35.0],
+                zoom: 6,
+                zoomControl: true
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+                // Risk seviyesine göre marker stilleri fonksiyonu
+            function getMarkerIcon(probability) {
+                let color;
+                let size = 20;
+                
+                if (probability >= 80) { // Çok Yüksek Risk
+                    color = 'rgba(220, 38, 38, 0.8)'; // Kırmızı
+                } else if (probability >= 65) { // Yüksek Risk
+                    color = 'rgba(249, 115, 22, 0.8)'; // Turuncu
+                } else if (probability >= 50) { // Orta Risk
+                    color = 'rgba(234, 179, 8, 0.8)'; // Sarı
+                } else {
+                    // Düşük ve çok düşük risk için standart marker
+                    return L.divIcon({
+                        className: 'custom-marker',
+                        iconSize: [10, 10],
+                        html: '<div class="marker-inner"></div>'
+                    });
+                }
+                
+                return L.divIcon({
+                    className: 'custom-flood-marker',
+                    html: `<div style="
+                        width: ${size}px;
+                        height: ${size}px;
+                        background: ${color};
+                        border: 2px solid white;
+                        border-radius: 50%;
+                        box-shadow: 0 0 10px rgba(0,0,0,0.3);
+                    "></div>`,
+                    iconSize: [size, size]
+                });
+            }
+
+                // Şehir işaretleyicileri - 
+            for (let [sehir, koordinat] of Object.entries(turkiyeSehirleri)) {
+                // İlk başta standart marker ile başlat
+                let marker = L.marker(koordinat, {
+                    icon: getMarkerIcon(0), // Başlangıçta düşük risk ikonu
+                    title: sehir
+                }).addTo(map);
+                
+                // Şehrin risk seviyesini kontrol et ve marker'ı güncelle
+                const formData = new FormData();
+                formData.append('city', sehir);
+                
+                fetch('/predict', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        // Marker'ı risk seviyesine göre güncelle
+                        marker.setIcon(getMarkerIcon(result.probability));
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+                
+                marker.on('click', async function() {
+                    try {
+                        const formData = new FormData();
+                        formData.append('city', sehir);
+
+                        const response = await fetch('/predict', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            const risk = getRiskLevel(result.probability);
+                            const popupContent = `
+                            <div class="custom-popup">
+                                <h3 class="font-bold text-lg mb-2">${sehir}</h3>
+                                <p>Sıcaklık: ${result.data['Temperature (°C)']}°C</p>
+                                <p>Nem: ${result.data['Humidity (%)']}%</p>
+                                <p>Yağış: ${result.data['Rainfall (mm)']} mm</p>
+                                <p>Bulut Oranı: ${result.data['Clouds (%)']}%</p>
+                                <p>Basınç: ${result.data['Pressure (hPa)']} hPa</p>
+                                <p>Rüzgar Hızı: ${result.data['Wind Speed (m/s)']} m/s</p>
+                                <p class="mt-2">Sel Riski: 
+                                    <span class="${risk.color} font-bold">
+                                        ${result.probability}% (${risk.level})
+                                    </span>
+                                </p>
+                            </div>
+                        `;
+                            
+                            marker.bindPopup(popupContent).openPopup();
+                        } else {
+                            throw new Error(result.error || 'Bilinmeyen bir hata oluştu');
+                        }
+                    } catch (error) {
+                        console.error('Error:', error);
+                        marker.bindPopup(`
+                            <div class="custom-popup">
+                                <h3 class="font-bold text-lg mb-2">${sehir}</h3>
+                                <p class="text-red-600">Hata: ${error.message}</p>
+                            </div>
+                        `).openPopup();
+                    }
+                });
+            }
+
+            // RainViewer eklentisi
+            setTimeout(function() {
+                if (typeof L.control.rainviewer !== 'undefined') {
+                    var rainviewer = L.control.rainviewer({
+                        position: 'bottomleft',
+                        nextButtonText: '>',
+                        playStopButtonText: 'Play/Stop',
+                        prevButtonText: '<',
+                        positionSliderLabelText: "Time:",
+                        opacitySliderLabelText: "Opacity:",
+                        animationInterval: 500,
+                        opacity: 0.5,
+                        showPlayStopButton: true,
+                        showNextPrevButtons: true,
+                        showPosMarker: true
+                    });
+                    rainviewer.addTo(map);
+                }
+            }, 1000);
+
+            // Sayfa yüklendiğinde tüm şehirlerin verilerini çek
+            fetchAllCityData();
+
+            // Her 30 dakikada bir verileri güncelle
+            setInterval(fetchAllCityData, 30 * 60 * 1000);
+        });
+    </script>
+
+    <script>
+    function toggleDropdown() {
+        const dropdown = document.getElementById('dropdown');
+        dropdown.classList.toggle('show');
+    }
+    
+    // Dropdown dışına tıklandığında kapanması için
+    window.onclick = function(event) {
+        if (!event.target.matches('.nav-button') && !event.target.closest('.nav-button')) {
+            const dropdown = document.getElementById('dropdown');
+            if (dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        }
+    }
+    </script>
+
+    <!-- Model Info Component -->
+    <script type="text/babel" src="{{ url_for('static', filename='ModelInfoCard.js') }}"></script>
+
+    <!-- Dashboard React komponenti -->
+    <script type="text/babel" src="{{ url_for('static', filename='RiskDashboard.js') }}"></script>
+    
+
+
+    <!-- React komponentlerini mount etme -->
+    <script type="text/babel">
+        ReactDOM.render(
+            <ModelInfoCard />,
+            document.getElementById('model-info-root')
+        );
+
+        ReactDOM.render(
+            <RiskDashboard />,
+            document.getElementById('dashboard-root')
+        );
+    </script>
+
+</body>
+</html>
