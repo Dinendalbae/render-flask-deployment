@@ -90,42 +90,67 @@ const RiskDashboard = () => {
   
     // Risk Legend Component'i
     const RiskLegend = () => (
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-            <h3 className="text-lg font-semibold mb-3">Risk Seviyeleri</h3>
-            <div className="grid grid-cols-5 gap-4">
-                <div className="bg-red-200 p-3 rounded-lg">
-                    <div className="text-red-800 font-medium text-center">
-                        <div className="mb-1">Çok Yüksek</div>
-                        <div className="text-sm">≥80%</div>
-                    </div>
-                </div>
-                <div className="bg-red-100 p-3 rounded-lg">
-                    <div className="text-red-600 font-medium text-center">
-                        <div className="mb-1">Yüksek</div>
-                        <div className="text-sm">65-79%</div>
-                    </div>
-                </div>
-                <div className="bg-yellow-100 p-3 rounded-lg">
-                    <div className="text-yellow-600 font-medium text-center">
-                        <div className="mb-1">Orta</div>
-                        <div className="text-sm">50-64%</div>
-                    </div>
-                </div>
-                <div className="bg-green-100 p-3 rounded-lg">
-                    <div className="text-green-600 font-medium text-center">
-                        <div className="mb-1">Düşük</div>
-                        <div className="text-sm">40-49%</div>
-                    </div>
-                </div>
-                <div className="bg-green-200 p-3 rounded-lg">
-                    <div className="text-green-800 font-medium text-center">
-                        <div className="mb-1">Çok Düşük</div>
-                        <div className="text-sm">＜40%</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+          <h3 className="text-lg font-semibold mb-3">Risk Seviyeleri</h3>
+          <div className="grid grid-cols-5 gap-4">
+              <div className="bg-red-200 p-3 rounded-lg">
+                  <div className="text-red-800 font-medium text-center">
+                      <div className="mb-1">Çok Yüksek</div>
+                      <div className="text-sm">≥80%</div>
+                      <div className="mt-2 text-xs text-left">
+                          Yağış: 40mm üzeri
+                          <br />
+                          Ani sel ve su baskını riski çok yüksek. Acil önlemler alınmalı, dere yataklarından uzak durulmalı.
+                      </div>
+                  </div>
+              </div>
+              <div className="bg-red-100 p-3 rounded-lg">
+                  <div className="text-red-600 font-medium text-center">
+                      <div className="mb-1">Yüksek</div>
+                      <div className="text-sm">65-79%</div>
+                      <div className="mt-2 text-xs text-left">
+                          Yağış: 20-40mm
+                          <br />
+                          Sel riski yüksek. Alt geçitler ve çukur alanlar tehlikeli olabilir. Dikkatli olunmalı.
+                      </div>
+                  </div>
+              </div>
+              <div className="bg-yellow-100 p-3 rounded-lg">
+                  <div className="text-yellow-600 font-medium text-center">
+                      <div className="mb-1">Orta</div>
+                      <div className="text-sm">50-64%</div>
+                      <div className="mt-2 text-xs text-left">
+                          Yağış: 10-20mm
+                          <br />
+                          Yerel su birikintileri oluşabilir. Temel önlemler alınmalı, yağmur suyu kanalları kontrol edilmeli.
+                      </div>
+                  </div>
+              </div>
+              <div className="bg-green-100 p-3 rounded-lg">
+                  <div className="text-green-600 font-medium text-center">
+                      <div className="mb-1">Düşük</div>
+                      <div className="text-sm">40-49%</div>
+                      <div className="mt-2 text-xs text-left">
+                          Yağış: 5-10mm
+                          <br />
+                          Hafif yağış beklenir. Normal şartlarda sel riski düşük, rutin önlemler yeterli.
+                      </div>
+                  </div>
+              </div>
+              <div className="bg-green-200 p-3 rounded-lg">
+                  <div className="text-green-800 font-medium text-center">
+                      <div className="mb-1">Çok Düşük</div>
+                      <div className="text-sm">＜40%</div>
+                      <div className="mt-2 text-xs text-left">
+                          Yağış: 5mm altı
+                          <br />
+                          Sel riski yok. Minimal yağış beklenir, günlük aktiviteler etkilenmez.
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  );
 
 
     // Risk seviyesi belirleme fonksiyonu
